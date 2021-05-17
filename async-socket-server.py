@@ -1,0 +1,125 @@
+#!/usr/bin/env python3.4
+import sys
+import config
+import asyncio
+import logging
+from datetime import datetime, timedelta
+from models import RadioData
+from database import db_session
+from sqlalchemy import exc
+from tasks import sync_to_gateway
+
+# logging
+formatter = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(filename="socketserver.log", format=formatter, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
+class SocketServer(asyncio.Protocol):
+    
+    def connection_made(self, transport):
+        client_name = transport.get_extra_info("peername")
+        print("Connection received from {}".format(client_name))
+        logger.info("Connection received from {}".format(client_name))
+        self.transport = transport
+
+    def data_received(self, data):
+        """
+        Implement a specific decoder for each radio type
+        data.decode()
+        """
+        try:
+            reading = format_radio_data(data.decode("utf-8"))
+            today = datetime.now()
+            try:
+                new_tx = RadioData(
+                    imei=reading["imei"],
+                    voltage=reading["voltage"],
+                    rssi=reading["rssi"],
+                    sensorval_1=reading["sensor1"],
+                    sensorval_2=reading["sensor2"],
+                    sensorval_3=reading["sensor3"],
+                    sensorval_4=reading["sensor4"],
+                    created_on=today,
+                    modified_on=today,
+                    sync=0
+                )
+
+                db_session.add(new_tx)
+                db_session.commit()
+                db_session.flush()
+                tx_id = new_tx.id
+                
+                # send to celery task to sync to gateway
+                sync_to_gateway(tx_id)
+
+                # log and output to console for debugging
+                print("RadioData: {}".format(str(reading)))
+                logger.info("RadioData: {}".format(str(reading)))
+
+            except exc.SQLAlchemyError as db_err:
+                logger.critical("{}".format(str(db_err)))
+                print("{}".format(str(db_err)))
+
+        except (ValueError, TypeError) as err:
+            logger.warning("{}".format(str(err)))
+            print("{}".format(str(err)))
+
+
+def format_radio_data(data):
+    """
+    Format the transmitted radio data into a dict
+    :params: data <string>
+    :return reading <dict>
+    """
+    values = data.split(",")
+    reading = dict()
+    if len(values) > 5:
+        reading["imei"] = values[0]
+        reading["dummy"] = values[1]
+        reading["voltage"] = values[2]
+        reading["rssi"] = values[3]
+        reading["sensor1"] = values[4]
+        reading["sensor2"] = values[5]
+        reading["sensor3"] = 0
+        reading["sensor4"] = 0
+    if len(values) == 7:
+        reading["sensor3"] = values[6]
+    if len(values) == 8:
+        reading["sensor3"] = values[6]
+        reading["sensor4"] = values[7]
+    
+    return reading
+
+
+def main():
+    """
+    Asyncio server main loop
+    :params HOST, PORT
+    :return socket server
+    """
+    
+    try:
+        today = datetime.now().strftime("%c")
+        loop = asyncio.get_event_loop()
+        coro = loop.create_server(SocketServer, config.RECEIVER_HOST, config.RECEIVER_PORT)
+        server = loop.run_until_complete(coro)
+
+        logger.info("Server Started")
+        print("Socket Server running on {}".format(server.sockets[0].getsockname()))
+
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            print("Socket Server Exited at {}".format(today))
+            sys.exit(1)
+        finally:
+            server.close()
+            loop.close()
+    
+    except asyncio.TimeoutError as te:
+        logger.debug("Asyncio timed out:{}".format(str(te)))
+
+
+if __name__ == "__main__":
+    main()

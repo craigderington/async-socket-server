@@ -1,0 +1,59 @@
+{% extends "_layout.html" %}
+{% block title %}CatM Socket Server | demo.owlsite.net {% endblock %}
+{% block head %}
+<meta http-equiv="refresh" content="30">
+<style>
+    .tablesorter tbody tr:first-child td {
+        background-color: #FFFF66;
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+    
+    {% if radiodata %}    
+    <table class="table table-striped tablesorter" name="radiodata">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>IMEI</th>
+                <th>Voltage</th>
+                <th>RSSI</th>
+                <th>Sensor 1</th>
+                <th>Sensor 2</th>
+                <th>Sensor 3</th>
+                <th>Sensor 4</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for radio in radiodata %}
+            <tr>
+                <td>{{ radio.id }}</td>
+                <td>{{ radio.created_on }}</td>
+                <td>{{ radio.imei }}</td>
+                <td>{{ radio.voltage }}</td>
+                <td>{{ radio.rssi }}</td>
+                <td>{{ radio.sensorval_1 }}</td>
+                <td>{{ radio.sensorval_2 }}</td>
+                <td>{{ radio.sensorval_3 }}</td>
+                <td>{{ radio.sensorval_4 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="8"><small> Found {{ totals }} Total Radio Records  </small></td>
+            </tr>
+        </tfoot>
+    </table>
+    
+    {% else %}
+
+        <div class="alert alert-warning alert-dismissible" style="margin-top:10px;">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <p><i class="fa fa-info-circle"></i> No Radio Data to Display.</p>
+        </div>
+
+    {% endif %}
+{% endblock %}
