@@ -10,7 +10,13 @@
 {% endblock %}
 {% block content %}
 
-    
+    <!-- show countdown time for auto-refresh -->
+    <div class="well well-sm">
+        <i class="fa fa-spinner fa-pulse fa-fw margin-bottom"></i> 
+            <span class="label label-danger">AUTO REFRESH ENABLED</span>
+            <span class="pull-right"><div id="timer"></div></span>
+    </div>
+
     {% if radiodata %}    
     <table class="table table-striped tablesorter" name="radiodata">
         <thead>
@@ -56,4 +62,20 @@
         </div>
 
     {% endif %}
+{% endblock %}
+{% block js %}
+<script>
+    var timeLeft = 30;
+    var elem = document.getElementById('timer');
+    var timerId = setInterval(countdown, 1000);
+
+    function countdown() {
+        if (timeLeft == -1) {
+            clearTimeout(timerId);
+        } else {
+            elem.innerHTML = timeLeft + ' seconds remaining...';
+            timeLeft--;
+        }
+    }
+</script>
 {% endblock %}
