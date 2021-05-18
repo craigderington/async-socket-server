@@ -23,9 +23,12 @@ class User(Base):
     created_by_fk = Column(Integer)
     changed_by_fk = Column(Integer)
 
-    def __init__(self, username, password):
+    def __init__(self, first_name, last_name, username, password, email):
         self.username = username
         self.set_password(password)
+        self.first_name = first_name
+        self.last_name = last_name
+        self.email = email
 
     def is_authenticated(self):
         return True

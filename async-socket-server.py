@@ -4,10 +4,10 @@ import config
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from models import RadioData
 from database import db_session
+from models import RadioData
 from sqlalchemy import exc
-from tasks import sync_to_gateway
+from tasks import async_to_gateway
 
 # logging
 formatter = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -23,47 +23,69 @@ class SocketServer(asyncio.Protocol):
         logger.info("Connection received from {}".format(client_name))
         self.transport = transport
 
+    
     def data_received(self, data):
         """
         Implement a specific decoder for each radio type
         data.decode()
         """
         try:
+            # format the radio data for database insert
             reading = format_radio_data(data.decode("utf-8"))
             today = datetime.now()
-            try:
-                new_tx = RadioData(
-                    imei=reading["imei"],
-                    voltage=reading["voltage"],
-                    rssi=reading["rssi"],
-                    sensorval_1=reading["sensor1"],
-                    sensorval_2=reading["sensor2"],
-                    sensorval_3=reading["sensor3"],
-                    sensorval_4=reading["sensor4"],
-                    created_on=today,
-                    modified_on=today,
-                    sync=0
-                )
+            if isinstance(reading, dict):
+                try:
+                    # create a new tx record
+                    new_tx = RadioData(
+                        imei=reading["imei"],
+                        voltage=reading["voltage"],
+                        rssi=reading["rssi"],
+                        sensorval_1=reading["sensor1"],
+                        sensorval_2=reading["sensor2"],
+                        sensorval_3=reading["sensor3"],
+                        sensorval_4=reading["sensor4"],
+                        created_on=today,
+                        modified_on=today,
+                        sync=0
+                    )
 
-                db_session.add(new_tx)
-                db_session.commit()
-                db_session.flush()
-                tx_id = new_tx.id
-                
-                # send to celery task to sync to gateway
-                sync_to_gateway(tx_id)
+                    # commit to database
+                    db_session.add(new_tx)
+                    db_session.commit()
+                    db_session.flush()
+                    tx_id = new_tx.id
+                    
+                    # async to gateway
+                    async_to_gateway(tx_id)
 
-                # log and output to console for debugging
-                print("RadioData: {}".format(str(reading)))
-                logger.info("RadioData: {}".format(str(reading)))
+                    # log and output to console for debugging
+                    print("RadioData: {}".format(str(reading)))
+                    logger.info("RadioData: {}".format(str(reading)))
 
-            except exc.SQLAlchemyError as db_err:
-                logger.critical("{}".format(str(db_err)))
-                print("{}".format(str(db_err)))
+                # catch database error
+                except exc.SQLAlchemyError as db_err:
+                    logger.critical("{}".format(str(db_err)))
+                    print("{}".format(str(db_err)))
+            
+            # catch malformed radio data and log
+            else:
+                logger.warning("TX Data Malformed: {}".format(str(reading)))
+                print("TX Data Malformed: {}".format(str(reading)))
 
+        # catch value or type error
         except (ValueError, TypeError) as err:
             logger.warning("{}".format(str(err)))
             print("{}".format(str(err)))
+
+    
+    def eof_received(self):
+        print("EOF")
+        return True
+
+    
+    def connection_lost(self, exc):
+        print('The server closed the connection')
+        print('Stop this event loop')
 
 
 def format_radio_data(data):
@@ -83,11 +105,14 @@ def format_radio_data(data):
         reading["sensor2"] = values[5]
         reading["sensor3"] = 0
         reading["sensor4"] = 0
-    if len(values) == 7:
-        reading["sensor3"] = values[6]
-    if len(values) == 8:
-        reading["sensor3"] = values[6]
-        reading["sensor4"] = values[7]
+        if len(values) == 7:
+            reading["sensor3"] = values[6]
+        if len(values) == 8:
+            reading["sensor3"] = values[6]
+            reading["sensor4"] = values[7]
+    else:
+        # the tx data is of insufficient length
+        reading = list(values)
     
     return reading
 
@@ -105,7 +130,8 @@ def main():
         coro = loop.create_server(SocketServer, config.RECEIVER_HOST, config.RECEIVER_PORT)
         server = loop.run_until_complete(coro)
 
-        logger.info("Server Started")
+        logger.info("Starting Socket Server...")
+        print("Starting Socket Server...")
         print("Socket Server running on {}".format(server.sockets[0].getsockname()))
 
         try:

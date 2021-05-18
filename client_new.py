@@ -5,10 +5,16 @@ import socket
 import sys
 import time
 import binascii
+import random
 
 # client vars
 host = "0.0.0.0"
-port = 8888
+port = 7179
+
+IMEI_LIST = ["3961389","3961897", "3969986", "3965580", "3965585", "3966754", "3966800", "3967500", "3967487"]
+VOLTAGE_LIST = ["321", "365", "375", "385", "390", "395", "400", "405"]
+RSSI_LIST = ["-67", "-70", "-58", "-68", "-69", "-71", "-80"]
+SENSOR_VALUES_LIST = ["125,10", "100,21.7,3.25", "105,22.8", "101,12,3.35,200.7", "103.2,16.7,3.3"]
 
 
 def main():
@@ -23,18 +29,20 @@ def main():
 
             # Connect to remote server
             s.connect((remote_ip, port))
-
             print('Socket Connected to {} on IP: {}:{}'.format(host, remote_ip, port))
-
-            # msg = b"\x05\x01\x84\x08\x00\x1az\x08a\x07P'\x89\x17a\x08{\x00\x01\x8c\x00\x00\x00\x84\x026\tp(%\tp($\tp($\tp($\tp($\tp($\tp($\tp($\tp($\x08p($\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe5\xaf".hex()
-            msg = "3967473,0,365,-67,125,10"
+            
             # Send some data to remote server
-            message = msg.encode('utf-8')
-
+            imei = random.choice(IMEI_LIST)
+            voltage = random.choice(VOLTAGE_LIST)
+            rssi = random.choice(RSSI_LIST)
+            sensor_values = random.choice(SENSOR_VALUES_LIST)
+            message = "{},0,{},{},{}".format(imei, voltage, rssi, sensor_values).encode("utf-8")
+            # test malformed radio tx data
+            # message = "3967473,125,10".encode("utf-8")
             try:
                 # Send the whole string
                 s.sendall(bytes(message))
-                print('Message: {} was sent successfully...'.format(msg))
+                print('Message: {} was sent successfully...'.format(message))
 
                 # Close the socket
                 s.close()
@@ -55,7 +63,7 @@ def main():
 
 
 if __name__ == "__main__":
-    for i in range(10):
-        time.sleep(0.0005)
+    for i in range(5):
+        time.sleep(0.00005)
         main()
     sys.exit(1)

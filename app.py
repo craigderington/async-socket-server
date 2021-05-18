@@ -35,7 +35,6 @@ app.config["SESSION_PERMANENT"] = True
 sess = Session()
 sess.init_app(app)
 
-
 # Flask-Mail configuration
 app.config["MAIL_SERVER"] = "smtp.mail.me.com"
 app.config["MAIL_PORT"] = 587
@@ -47,7 +46,6 @@ app.config["MAIL_DEFAULT_SENDER"] = config.MAIL_DEFAULT_SENDER
 # SQLAlchemy
 app.config["SQLALCHEMY_DATABASE_URI"] = config.SQLALCHEMY_DATABASE_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = config.SQLALCHEMY_TRACK_MODIFICATIONS
-# db = SQLAlchemy(app)
 
 # define our login_manager
 login_manager = LoginManager()
@@ -87,6 +85,15 @@ def create_db():
     today = get_date()
     init_db()
     app.logger.info("SQLite3 Database initialized on: {}".format(today))
+
+    users = db_session.query(User).count()
+    if users == 0:
+        # load default user
+        user = User("Craig", "Derington", "craigderington", "yufakay3!", "craig.derington@mac.com")
+        db_session.add(user)
+        db_session.commit()
+        db_session.flush()
+    
     
 
 # clear all db sessions at the end of each request
@@ -189,9 +196,10 @@ def format_date(value):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-
 if __name__ == "__main__":
-    port = 5580
+    port = config.APP_PORT
+    debug = config.DEBUG
+    
     # start the application
     app.run(
         debug=debug,

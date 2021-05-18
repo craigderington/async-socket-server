@@ -22,8 +22,8 @@ def dec_serializer(o):
 
 
 @celery.task(max_retries=3)
-def sync_to_gateway(radiodata_id):
-    """ Sync the new radio data record to the Portal gatewat """
+def async_to_gateway(radiodata_id):
+    """ Sync the new radio data record to the Portal gateway """
     method = "POST"
     hdr = {"Content-Type": "application/json"}
     params = None
