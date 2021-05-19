@@ -64,7 +64,7 @@ app.config["CELERY_ACCEPT_CONTENT"] = config.CELERY_ACCEPT_CONTENT
 app.config.update(accept_content=["json", "pickle"])
 
 # Initialize Celery
-celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"])
+celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"], include=["tasks"])
 celery.conf.update(app.config)
 
 # Config mail

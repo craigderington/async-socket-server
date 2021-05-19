@@ -9,10 +9,14 @@ from models import RadioData
 from sqlalchemy import exc
 from tasks import async_to_gateway
 
-# logging
+# socker server logging
 formatter = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-logging.basicConfig(filename="socketserver.log", format=formatter, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+logger.setLevel("DEBUG")
+log_handler = logging.FileHandler("socker-server.log")
+formatter = logging.Formatter(formatter)
+log_handler.setFormatter(formatter)
+logger.addHandler(log_handler)
 
 
 class SocketServer(asyncio.Protocol):
@@ -56,7 +60,7 @@ class SocketServer(asyncio.Protocol):
                     tx_id = new_tx.id
                     
                     # async to gateway
-                    async_to_gateway(tx_id)
+                    async_to_gateway.delay(tx_id)
 
                     # log and output to console for debugging
                     print("RadioData: {}".format(str(reading)))

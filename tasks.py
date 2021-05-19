@@ -9,11 +9,17 @@ import decimal
 from app import celery
 from sqlalchemy import exc
 import logging
+from celery.utils.log import get_logger
 
-# logging
+# celery logging
 formatter = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-logging.basicConfig(filename="celery-sync.log", format=formatter, level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+logger.setLevel("DEBUG")
+log_handler = logging.FileHandler("celery-worker.log")
+formatter = logging.Formatter(formatter)
+log_handler.setFormatter(formatter)
+logger.addHandler(log_handler)
+
 
 
 def dec_serializer(o):
@@ -34,19 +40,37 @@ def async_to_gateway(radiodata_id):
         ).one()
 
         if radiodata:
+            
+            tx_timestamp = radiodata.created_on.strftime("%Y-%m-%d %H:%M:%S")
+            
+            data =  {
+                "id": radiodata.id,
+                "tx_date": tx_timestamp,
+                "imei": radiodata.imei,
+                "voltage": radiodata.voltage,
+                "rssi": radiodata.rssi,
+                "sensor1": radiodata.sensorval_1,
+                "sensor2": radiodata.sensorval_2,
+                "sensor3": radiodata.sensorval_3,
+                "sensor4": radiodata.sensorval_4
+            }
+            
             try:
                 r = requests.request(
                     method,
                     config.PORTAL_SYNC_URL,
                     headers=hdr,
                     params=params,
-                    data=json.dumps(radiodata, default=dec_serializer)
+                    data=json.dumps(data, default=dec_serializer)
                 )
 
                 if r.status_code == 200:
+                    resp = r.json()
                     radiodata.sync = 1
                     db_session.commit()
                     db_session.flush()
+                    logger.info("API Response: {}".format(str(resp)))
+                    logger.info("Radio ID: {} sync flag updated.".format(str(radiodata.imei)))
                 else:
                     message = "Celery Sync API Call Returned Status Code: {}".format(str(r.status_code))
                     logger.warning("{}".format(str(message)))
