@@ -13,7 +13,7 @@ from tasks import async_to_gateway
 formatter = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
-log_handler = logging.FileHandler("socker-server.log")
+log_handler = logging.FileHandler("asyncio-socket-server.log")
 formatter = logging.Formatter(formatter)
 log_handler.setFormatter(formatter)
 logger.addHandler(log_handler)
