@@ -9,10 +9,10 @@ SECRET_KEY = os.urandom(64)
 
 # socket server listening + port
 RECEIVER_HOST = "0.0.0.0"
-RECEIVER_PORT = 7179
+RECEIVER_PORT = 7180
 
 # flask app frontend port
-APP_PORT = 7180
+APP_PORT = 7179
 
 # Sync to Gateway URL
 PORTAL_SYNC_URL = "https://httpbin.org/post"

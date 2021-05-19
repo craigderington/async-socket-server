@@ -8,8 +8,9 @@ import binascii
 import random
 
 # client vars
-host = "0.0.0.0"
-port = 7179
+# host = "demo.owlsite.net"
+host = "54.201.193.104"
+port = 7180
 
 IMEI_LIST = ["3961389","3961897", "3969986", "3965580", "3965585", "3966754", "3966800", "3967500", "3967487"]
 VOLTAGE_LIST = ["321", "365", "375", "385", "390", "395", "400", "405"]
