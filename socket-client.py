@@ -9,13 +9,13 @@ import random
 
 # client vars
 # host = "demo.owlsite.net"
-host = "demo.owlsite.net"
-port = 7180
+host = "0.0.0.0"
+port = 7182
 
-IMEI_LIST = ["3961001","3961002", "3961003", "3961004", "39691005", "3966754", "3966800", "3967500", "3967487"]
+IMEI_LIST = ["5551190","5551191", "5551192", "5551193", "5551194", "55551195", "5551196", "5551197", "5551198"]
 VOLTAGE_LIST = ["321", "365", "375", "385", "390", "395", "400", "405"]
 RSSI_LIST = ["-67", "-70", "-58", "-68", "-69", "-71", "-80"]
-SENSOR_VALUES_LIST = ["125,10", "100,21.7,3.25", "105,22.8", "101,12,3.35,200.7", "103.2,16.7,3.3"]
+SENSOR_VALUES_LIST = ["125", "100", "105", "101", "103", "110", "99", "107"]
 
 
 def main():
@@ -37,7 +37,7 @@ def main():
             voltage = random.choice(VOLTAGE_LIST)
             rssi = random.choice(RSSI_LIST)
             sensor_values = random.choice(SENSOR_VALUES_LIST)
-            message = "{},0,{},{},{}".format(imei, voltage, rssi, sensor_values).encode("utf-8")
+            message = "{},{},{},{}".format(imei, sensor_values, voltage, rssi).encode("utf-8")
             # test malformed radio tx data
             # message = "3967473,125,10".encode("utf-8")
             try:
@@ -64,7 +64,7 @@ def main():
 
 
 if __name__ == "__main__":
-    for i in range(5):
+    for i in range(25):
         time.sleep(0.00005)
         main()
     sys.exit(1)

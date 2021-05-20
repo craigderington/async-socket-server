@@ -9,10 +9,10 @@ SECRET_KEY = os.urandom(64)
 
 # socket server listening + port
 RECEIVER_HOST = "0.0.0.0"
-RECEIVER_PORT = 7180
+RECEIVER_PORT = 7182
 
 # flask app frontend port
-APP_PORT = 7179
+APP_PORT = 7181
 
 # Sync to Gateway URL
 PORTAL_SYNC_URL = "https://httpbin.org/post"
@@ -30,7 +30,7 @@ CELERY_ACCEPT_CONTENT = "pickle,json"
 CSRF_ENABLED = True
 
 # App name
-APP_NAME = "Electrobit CatM Python Asyncio Socket Server"
+APP_NAME = "CircuitNimble Python Asyncio Socket Server"
 
 # Flask Mail
 MAIL_USERNAME = "craig.derington@mac.com"

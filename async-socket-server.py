@@ -72,9 +72,17 @@ class SocketServer(asyncio.Protocol):
                     print("{}".format(str(db_err)))
             
             # catch malformed radio data and log
-            else:
+            elif isinstance(reading, list):
                 logger.warning("TX Data Malformed: {}".format(str(reading)))
                 print("TX Data Malformed: {}".format(str(reading)))
+
+            elif isinstance(reading, str):
+                logger.warning("HEARBEAT: {}".format(str(reading)))
+                print("HEARTBEAT: {}".format(str(reading)))
+            
+            else:
+                logger.warning("Unknown Data TX: {}".format(str(reading)))
+                print("Unknown Data TX: {}".format(str(reading)))
 
         # catch value or type error
         except (ValueError, TypeError) as err:
@@ -98,22 +106,27 @@ def format_radio_data(data):
     :params: data <string>
     :return reading <dict>
     """
+    today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     values = data.split(",")
     reading = dict()
-    if len(values) > 5:
+    if len(values) > 3:
         reading["imei"] = values[0]
-        reading["dummy"] = values[1]
-        reading["voltage"] = values[2]
-        reading["rssi"] = values[3]
-        reading["sensor1"] = values[4]
-        reading["sensor2"] = values[5]
-        reading["sensor3"] = 0
-        reading["sensor4"] = 0
-        if len(values) == 7:
-            reading["sensor3"] = values[6]
-        if len(values) == 8:
-            reading["sensor3"] = values[6]
-            reading["sensor4"] = values[7]
+        if len(reading["imei"]) <= 10:
+            reading["sensor1"] = values[1]
+            reading["voltage"] = values[2]
+            reading["rssi"] = values[3]
+            reading["sensor2"] = 0
+            reading["sensor3"] = 0
+            reading["sensor4"] = 0
+            if len(values) == 5:
+                reading["sensor2"] = values[4]
+            if len(values) == 6:
+                reading["sensor3"] = values[5]
+            if len(values) == 7:
+                reading["sensor3"] = values[5]
+                reading["sensor4"] = values[6]
+        else:
+            reading = str("Heartbeat Probe received: {}...".format(str(today)))
     else:
         # the tx data is of insufficient length
         reading = list(values)
