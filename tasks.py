@@ -44,15 +44,18 @@ def async_to_gateway(radiodata_id):
             tx_timestamp = radiodata.created_on.strftime("%Y-%m-%d %H:%M:%S")
             
             data =  {
-                "id": radiodata.id,
-                "tx_date": tx_timestamp,
-                "imei": radiodata.imei,
+                "mtu_id": radiodata.imei,
+                "network_id": radiodata.imei,
+                "receiver_time": tx_timestamp,
+                "gateway_time": tx_timestamp,
+                "sensor_value_type": 1,
+                "sensor_value_raw": radiodata.sensorval_1,
                 "voltage": radiodata.voltage,
-                "rssi": radiodata.rssi,
-                "sensor1": radiodata.sensorval_1,
-                "sensor2": radiodata.sensorval_2,
-                "sensor3": radiodata.sensorval_3,
-                "sensor4": radiodata.sensorval_4
+                "kp_signal_strength": radiodata.rssi,
+                "receiver_id": "circnimb",
+                "receiver_ip": "0.0.0.0",
+                "sensor_value": radiodata.sensorval_1,
+                "last_sync_date": tx_timestamp
             }
             
             try:
