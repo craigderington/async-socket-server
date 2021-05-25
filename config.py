@@ -15,7 +15,7 @@ RECEIVER_PORT = 7182
 APP_PORT = 7181
 
 # Sync to Gateway URL
-PORTAL_SYNC_URL = "http://127.0.0.1:8000/sync"
+PORTAL_SYNC_URL = "http://127.0.0.1:8000/sync/"
 
 # The SQLAlchemy connection string.
 SQLALCHEMY_DATABASE_URI = "sqlite:///" + basedir + "radiodata.db"

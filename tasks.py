@@ -50,9 +50,9 @@ def async_to_gateway(radiodata_id):
                     "mtu_id": radiodata.imei,
                     "kp_receiver":  1,
                     "kp_system": 0,
-                    "value_type": 0,
+                    "value_type": 1,
                     "value": radiodata.sensorval_1,
-                    "kp_signal_strength": 0,
+                    "kp_signal_strength": radiodata.rssi,
                     "kp_signal_level_id": 0,
                     "network_id": radiodata.imei,
                     "receiver_time": tx_timestamp
