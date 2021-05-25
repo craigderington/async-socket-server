@@ -67,13 +67,17 @@ def async_to_gateway(radiodata_id):
                     data=json.dumps(data, default=dec_serializer)
                 )
 
-                if r.status_code == 200:
-                    resp = r.json()
+                if r.status_code == 204:
+                    resp = 'DONE'
                     radiodata.sync = 1
                     db_session.commit()
                     db_session.flush()
                     logger.info("API Response: {}".format(str(resp)))
                     logger.info("Radio ID: {} sync flag updated.".format(str(radiodata.imei)))
+                elif r.status_code == 400:
+                    resp = 'FAILED'
+                    logger.info("API Response: {}".format(str(resp)))
+                    logger.info("Radio ID: {} sync failed.".format(str(radiodata.imei)))
                 else:
                     message = "Celery Sync API Call Returned Status Code: {}".format(str(r.status_code))
                     logger.warning("{}".format(str(message)))
