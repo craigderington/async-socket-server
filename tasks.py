@@ -43,28 +43,32 @@ def async_to_gateway(radiodata_id):
             
             tx_timestamp = radiodata.created_on.strftime("%Y-%m-%d %H:%M:%S")
             
-            data =  {
-                "mtu_id": radiodata.imei,
-                "network_id": radiodata.imei,
-                "receiver_time": tx_timestamp,
-                "gateway_time": tx_timestamp,
-                "sensor_value_type": 1,
-                "sensor_value_raw": radiodata.sensorval_1,
-                "voltage": radiodata.voltage,
-                "kp_signal_strength": radiodata.rssi,
-                "receiver_id": "circnimb",
-                "receiver_ip": "0.0.0.0",
-                "sensor_value": radiodata.sensorval_1,
-                "last_sync_date": tx_timestamp
+            post_data =  {
+                "receiver_id": 'circnimb',
+                "data": {
+                    "mtu_id": radiodata.imei,
+                    "network_id": radiodata.imei,
+                    "receiver_time": tx_timestamp,
+                    "gateway_time": tx_timestamp,
+                    "sensor_value_type": 1,
+                    "sensor_value_raw": radiodata.sensorval_1,
+                    "voltage": radiodata.voltage,
+                    "kp_signal_strength": radiodata.rssi,
+                    "receiver_id": "circnimb",
+                    "receiver_ip": "0.0.0.0",
+                    "sensor_value": radiodata.sensorval_1,
+                    "last_sync_date": tx_timestamp
+                }
             }
             
             try:
+                hdr["Content-Length"] = len(post_data)
                 r = requests.request(
                     method,
                     config.PORTAL_SYNC_URL,
                     headers=hdr,
                     params=params,
-                    data=json.dumps(data, default=dec_serializer)
+                    data=json.dumps(post_data, default=dec_serializer)
                 )
 
                 if r.status_code == 204:
