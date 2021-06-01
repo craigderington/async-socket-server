@@ -69,7 +69,34 @@ class RadioData(Base):
     created_on = Column(DateTime, default=datetime.now, nullable=True)
     modified_on = Column(DateTime, default=datetime.now, nullable=True)
     sync = Column(Boolean, default=0)
+    mcu_ver = Column(String(10), nullable=True)
+    firmware_ver = Column(String(10), nullable=True)
 
     def __repr__(self):
         if self.id is not None:
             return "{} {} {}".format(self.imei, self.voltage, self.sensorval_1)
+    
+    def get_sensor_value_one(self):
+        if self.id and self.sensorval_1:
+            return "{}".format(self.sensorval_1)
+    
+    def get_firmware_version(self):
+        if self.id:
+            return "{}".format(self.firmware_ver)
+    
+    def get_mcu_version(self):
+        if self.id and self.mcu_version:
+            return "{}".format(self.mcu_ver)
+    
+
+class OTAUpdate(Base):
+    __tablename__ = 'otaupdate'
+    id = Column(Integer, primary_key=True)
+    ota_path = Column(String(255), nullable=False)
+    last_ota_date = Column(DateTime, default=datetime.now, nullable=True)
+
+    def __repr__(self):
+        if self.id and self.ota_path:
+            return "{}".format(self.ota_path)
+
+

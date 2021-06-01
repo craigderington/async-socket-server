@@ -5,7 +5,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from database import db_session
-from models import RadioData
+from models import RadioData, OTAUpdate
 from sqlalchemy import exc
 from tasks import async_to_gateway
 
@@ -18,6 +18,7 @@ formatter = logging.Formatter(formatter)
 log_handler.setFormatter(formatter)
 logger.addHandler(log_handler)
 
+current_version = "v0.01"
 
 class SocketServer(asyncio.Protocol):
     
@@ -50,7 +51,8 @@ class SocketServer(asyncio.Protocol):
                         sensorval_4=reading["sensor4"],
                         created_on=today,
                         modified_on=today,
-                        sync=0
+                        sync=0,
+                        mcu_ver=reading["version"]
                     )
 
                     # commit to database
@@ -58,9 +60,17 @@ class SocketServer(asyncio.Protocol):
                     db_session.commit()
                     db_session.flush()
                     tx_id = new_tx.id
+
+                    # compare firmware versions
+                    if check_version(reading["mcu_ver"], current_version):
+                        """ write data to radio """
+                        message = get_ota_update_path()
+                        self.write_data(data, message)
+                        logger.info("Sending OTA Update for IMEI: {}".format(str(reading["imei"])))
                     
-                    # async to gateway
+                    # async to gateway and log
                     async_to_gateway.delay(tx_id)
+                    logger.info("Sending TX ID: {} to sync to gateway".format(str(tx_id)))
 
                     # log and output to console for debugging
                     print("RadioData: {}".format(str(reading)))
@@ -83,13 +93,31 @@ class SocketServer(asyncio.Protocol):
 
     
     def eof_received(self):
-        print("EOF")
+        """
+        End of Transmission Received
+        :params None
+        :return Bool
+        """
+        print("TX EOF")
+        logger.info("Transmission End of File.")
         return True
+    
+    
+    def write_data(self, data, message):
+        """
+        Write OK or TX OTA Update Message
+        :params data (firmware rev, mcu version)
+        :return Transport Writer
+        """
+        self.transport.write(data)
 
     
     def connection_lost(self, exc):
-        print('The server closed the connection')
-        print('Stop this event loop')
+        """
+        Connection Lost Message
+        """
+        print('The server has closed the connection to the client.')
+        print('Killing this event loop...')
 
 
 def format_radio_data(data):
@@ -102,7 +130,7 @@ def format_radio_data(data):
     reading = dict()
     if len(values) > 5:
         reading["imei"] = values[0]
-        reading["dummy"] = values[1]
+        reading["version"] = values[1]
         reading["voltage"] = values[2]
         reading["rssi"] = values[3]
         reading["sensor1"] = values[4]
@@ -119,6 +147,30 @@ def format_radio_data(data):
         reading = list(values)
     
     return reading
+
+
+def check_version(a, b):
+    """ 
+    Compare the current firmware to the radio firmware
+    :params a (radio firmware), b (current version)
+    :return Bool
+    """
+    return a != b
+
+
+def get_ota_update_path():
+    """
+    Return the OTA Update Path
+    """
+    ota = None
+    
+    try:
+        ota = db_session.query(OTAUpdate).last()
+    except exc.SQLAlchemyError as err:
+        logger.warning("Can not get OTA Update Path from database: {}".format(str(err)))
+    
+    return str(ota)
+
 
 
 def main():
