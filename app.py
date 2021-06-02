@@ -100,7 +100,7 @@ def create_db():
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
-    app.logger.info("Database session destroyed.")
+    app.logger.info("Closing database connection...")
 
 
 # load the user
@@ -128,6 +128,7 @@ def index():
     Receiver debug page
     """
     radiodata = None
+    client = request.remote_addr
 
     try:
         radiodata = db_session.query(RadioData).order_by(
@@ -140,6 +141,9 @@ def index():
         flash("{}".format(str(db_err)))
         return redirect(url_for("index"))
     
+    # log the connection from client
+    app.logger.info("Serving index.html to client: {}".format(str(client)))
+
     return render_template(
         "index.html",
         radiodata=radiodata,

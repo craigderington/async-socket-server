@@ -1,17 +1,22 @@
 # tasks.py
 import config
+from celery import Celery
 from datetime import datetime, timedelta
 from models import RadioData
 from database import db_session
 import requests
 import json
 import decimal
-from app import celery
 from sqlalchemy import exc
 import logging
 from celery.utils.log import get_logger
 
-# celery logging
+# create an instance of celery
+celery = Celery(__name__,  
+                broker=config.CELERY_BROKER_URL,
+                backend=config.CELERY_RESULT_BACKEND)
+
+# set up celery logging
 formatter = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logger = get_logger(__name__)
 logger.setLevel("DEBUG")
@@ -21,10 +26,46 @@ log_handler.setFormatter(formatter)
 logger.addHandler(log_handler)
 
 
-
 def dec_serializer(o):
     if isinstance(o, decimal.Decimal):
         return float(o)
+
+
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    """ Celery heartbeat periodic task watcher """
+    # periodic task executes every 2 hours (7200)
+    sender.add_periodic_task(600.0, get_tx_to_sync, name="Get TXs to Sync")
+
+
+@celery.task(max_retries=3)
+def get_tx_to_sync():
+    """
+    Generate a list of TX record IDs that have sync equals zero
+    :params None
+    :return list
+    """
+    rows = None
+    row_count = 0
+    try:
+        rows = db_session.query(RadioData).filter(
+            RadioData.sync == 0
+        ).all()
+
+        if rows:
+            for record in rows:
+                async_to_gateway.delay(record.id)
+                row_count += 1
+                logger.info("Sending TX ID: {} to sync to gateway.".format(str(record.id)))
+        else:
+            current_time = datetime.now().strftime("%c")
+            logger.info("ALL Records Synced as of: {}".format(current_time))
+
+    except exc.SQLAlchemyError as err:
+        logger.critical("Database error: {}".format(str(err)))
+    
+    # return the count
+    return row_count
 
 
 @celery.task(max_retries=3)
@@ -68,7 +109,7 @@ def async_to_gateway(radiodata_id):
                     data=json.dumps(post_data, default=dec_serializer)
                 )
 
-                if r.status_code == 204:
+                if r.status_code == 200:
                     resp = 'DONE'
                     radiodata.sync = 1
                     db_session.commit()
@@ -88,3 +129,6 @@ def async_to_gateway(radiodata_id):
     
     except exc.SQLAlchemyError as db_err:
         logger.critical("{}".format(str(db_err)))
+    
+    # return radiodata_id to the console
+    return radiodata_id
