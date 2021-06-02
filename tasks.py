@@ -109,7 +109,7 @@ def async_to_gateway(radiodata_id):
                     data=json.dumps(post_data, default=dec_serializer)
                 )
 
-                if r.status_code == 200:
+                if r.status_code == 204:
                     resp = 'DONE'
                     radiodata.sync = 1
                     db_session.commit()
