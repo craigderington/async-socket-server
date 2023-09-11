@@ -89,7 +89,7 @@ def create_db():
     users = db_session.query(User).count()
     if users == 0:
         # load default user
-        user = User("Craig", "Derington", "craigderington", "yufakay3!", "craig.derington@mac.com")
+        user = User("Craig", "Derington", "craigderington", "", "craigderington@mac.com")
         db_session.add(user)
         db_session.commit()
         db_session.flush()
